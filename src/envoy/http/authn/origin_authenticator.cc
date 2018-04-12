@@ -31,6 +31,9 @@ OriginAuthenticator::OriginAuthenticator(FilterContext* filter_context,
     : AuthenticatorBase(filter_context, done_callback), policy_(policy) {}
 
 void OriginAuthenticator::run() {
+  Payload* payload = nullptr;
+  bool success = false;
+
   if (policy_.origins_size() == 0) {
     switch (policy_.principal_binding()) {
       case iaapi::PrincipalBinding::USE_ORIGIN:
@@ -42,12 +45,12 @@ void OriginAuthenticator::run() {
                   "Principal is binded to origin, but no method specified in "
                   "policy {}",
                   policy_.DebugString());
-        onMethodDone(nullptr, false);
+        //onMethodDone(nullptr, false);
         break;
       case iaapi::PrincipalBinding::USE_PEER:
         // On the other hand, it's ok to have no (origin) methods if
         // rule USE_SOURCE
-        onMethodDone(nullptr, true);
+        //onMethodDone(nullptr, true);
         break;
       default:
         // Should never come here.
@@ -57,11 +60,27 @@ void OriginAuthenticator::run() {
     }
     return;
   }
+
+  /*
   runMethod(policy_.origins(0), [this](const Payload* payload, bool success) {
     onMethodDone(payload, success);
-  });
+  });*/
+  for (int method_index_= 0; method_index_< policy_.origins_size(); method_index_++) {
+    const istio::authentication::v1alpha1::OriginAuthenticationMethod& method = policy_.origins(method_index_);
+    payload = validateJwt(method.jwt(), success);
+    if (success) {
+      break;
+    }
+  }
+
+  if (success) {
+    filter_context()->setOriginResult(payload);
+    filter_context()->setPrincipal(policy_.principal_binding());
+  }
+  done(success);
 }
 
+/*
 void OriginAuthenticator::runMethod(
     const istio::authentication::v1alpha1::OriginAuthenticationMethod& method,
     const AuthenticatorBase::MethodDoneCallback& callback) {
@@ -84,7 +103,7 @@ void OriginAuthenticator::onMethodDone(const Payload* payload, bool success) {
     filter_context()->setPrincipal(policy_.principal_binding());
   }
   done(success);
-}
+} */
 
 }  // namespace AuthN
 }  // namespace Istio

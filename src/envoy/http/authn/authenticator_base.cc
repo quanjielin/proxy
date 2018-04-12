@@ -35,6 +35,7 @@ AuthenticatorBase::~AuthenticatorBase() {}
 
 void AuthenticatorBase::done(bool success) const { done_callback_(success); }
 
+/*
 void AuthenticatorBase::validateX509(
     const iaapi::MutualTls& mtls,
     const AuthenticatorBase::MethodDoneCallback& done_callback) const {
@@ -58,6 +59,63 @@ void AuthenticatorBase::validateX509(
   }
 }
 
+std::shared_ptr<Payload> AuthenticatorBase::validateX509(
+    const iaapi::MutualTls& mtls, bool& success) const {
+  const Network::Connection* connection = filter_context_.connection();
+  if (connection == nullptr || connection->ssl() == nullptr) {
+    // Not a TLS connection
+    success = false;
+    return nullptr;
+  }
+
+  std::shared_ptr<Payload> payload = std::shared_ptr<Payload>(new Payload());
+
+  bool has_user =
+      connection->ssl()->peerCertificatePresented() &&
+      Utils::GetSourceUser(connection, (payload.get())->mutable_x509()->mutable_user());
+
+  if (!has_user && !mtls.allow_tls()) {
+    // mTLS and no source user
+    //done_callback(nullptr, false);
+    success = false;
+    return nullptr;
+  } else {
+    //done_callback(&payload, true);
+    success = true;
+    return payload;
+  }
+}
+*/
+
+Payload* AuthenticatorBase::validateX509(
+    const iaapi::MutualTls& mtls, bool& success) const {
+  const Network::Connection* connection = filter_context_.connection();
+  if (connection == nullptr || connection->ssl() == nullptr) {
+    // Not a TLS connection
+    success = false;
+    return nullptr;
+  }
+
+  Payload* payload = new Payload();
+
+  bool has_user =
+      connection->ssl()->peerCertificatePresented() &&
+      Utils::GetSourceUser(connection, payload->mutable_x509()->mutable_user());
+
+  if (!has_user && !mtls.allow_tls()) {
+    // mTLS and no source user
+    //done_callback(nullptr, false);
+    success = false;
+    delete payload;
+    return nullptr;
+  } else {
+    //done_callback(&payload, true);
+    success = true;
+    return payload;
+  }
+}
+
+/*
 void AuthenticatorBase::validateJwt(
     const iaapi::Jwt& jwt,
     const AuthenticatorBase::MethodDoneCallback& done_callback) {
@@ -88,6 +146,77 @@ void AuthenticatorBase::validateJwt(
     done_callback(&payload, true);
   }
 }
+
+std::shared_ptr<Payload> AuthenticatorBase::validateJwt(
+    const iaapi::Jwt& jwt, bool& success) {
+  Envoy::Http::HeaderMap& header = *filter_context()->headers();
+  success = false;
+
+  auto iter =
+      filter_context()->filter_config().jwt_output_payload_locations().find(
+          jwt.issuer());
+  if (iter ==
+      filter_context()->filter_config().jwt_output_payload_locations().end()) {
+    ENVOY_LOG(error,
+              "No JWT payload header location is found for the issuer {}",
+              jwt.issuer());
+    //done_callback(nullptr, false);
+    return nullptr;
+  }
+
+  std::shared_ptr<Payload> payload = std::shared_ptr<Payload>(new Payload());
+  LowerCaseString header_key(iter->second);
+  bool ret = AuthnUtils::GetJWTPayloadFromHeaders(header, header_key,
+                                                  (payload.get())->mutable_jwt());
+  if (!ret) {
+    ENVOY_LOG(debug, "GetJWTPayloadFromHeaders() returns false.");
+    //done_callback(nullptr, false);
+    return nullptr;
+  } else {
+    ENVOY_LOG(debug, "A valid JWT is found.");
+    // payload is a stack variable, done_callback should treat it only as a
+    // temporary variable
+    //done_callback(&payload, true);
+    success = true;
+    return payload;
+  }
+} */
+
+Payload* AuthenticatorBase::validateJwt(
+    const iaapi::Jwt& jwt, bool& success) {
+  Envoy::Http::HeaderMap& header = *filter_context()->headers();
+  success = false;
+
+  auto iter =
+      filter_context()->filter_config().jwt_output_payload_locations().find(
+          jwt.issuer());
+  if (iter ==
+      filter_context()->filter_config().jwt_output_payload_locations().end()) {
+    ENVOY_LOG(error,
+              "No JWT payload header location is found for the issuer {}",
+              jwt.issuer());
+    //done_callback(nullptr, false);
+    return nullptr;
+  }
+
+  Payload* payload = new Payload();
+  LowerCaseString header_key(iter->second);
+  bool ret = AuthnUtils::GetJWTPayloadFromHeaders(header, header_key,
+                                                  payload->mutable_jwt());
+  if (!ret) {
+    ENVOY_LOG(debug, "GetJWTPayloadFromHeaders() returns false.");
+    //done_callback(nullptr, false);
+    delete payload;
+    return nullptr;
+  } else {
+    ENVOY_LOG(debug, "A valid JWT is found.");
+    // payload is a stack variable, done_callback should treat it only as a
+    // temporary variable
+    //done_callback(&payload, true);
+    success = true;
+    return payload;
+    }
+  }
 
 }  // namespace AuthN
 }  // namespace Istio

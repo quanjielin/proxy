@@ -33,16 +33,45 @@ PeerAuthenticator::PeerAuthenticator(
     : AuthenticatorBase(filter_context, done_callback), policy_(policy) {}
 
 void PeerAuthenticator::run() {
+  //std::shared_ptr<Payload> payload = nullptr;
+  Payload* payload = nullptr;
+  bool success = false;
+
   if (policy_.peers_size() == 0) {
     ENVOY_LOG(debug, "No method defined. Skip source authentication.");
-    onMethodDone(nullptr, true);
+    //onMethodDone(nullptr, true);
+    success = true;
   } else {
+    /*
     runMethod(policy_.peers(0), [this](const Payload* payload, bool success) {
-      onMethodDone(payload, success);
-    });
-  }
+      onMethodDone(payload, success);*/
+      for (int peer_method_index_ = 0; peer_method_index_ < policy_.peers_size(); peer_method_index_++) {
+        const iaapi::PeerAuthenticationMethod& method = policy_.peers(peer_method_index_);
+        switch (method.params_case()) {
+          case iaapi::PeerAuthenticationMethod::ParamsCase::kMtls:
+            payload = validateX509(method.mtls(), success);
+            break;
+          case iaapi::PeerAuthenticationMethod::ParamsCase::kJwt:
+            payload = validateJwt(method.jwt(), success);
+            break;
+          default:
+            ENVOY_LOG(error, "Unknown peer authentication param {}", method.DebugString());    
+        }
+
+        if (success) {
+          break;
+        }
+      }
+    }
+
+    if (success) {
+      filter_context()->setPeerResult(payload);
+    }
+    
+    done(success);
 }
 
+/*
 void PeerAuthenticator::runMethod(const iaapi::PeerAuthenticationMethod& method,
                                   const MethodDoneCallback& done_callback) {
   switch (method.params_case()) {
@@ -73,7 +102,7 @@ void PeerAuthenticator::onMethodDone(const Payload* payload, bool success) {
     filter_context()->setPeerResult(payload);
   }
   done(success);
-}
+} */
 
 }  // namespace AuthN
 }  // namespace Istio

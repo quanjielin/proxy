@@ -50,15 +50,35 @@ class AuthenticatorBase : public Logger::Loggable<Logger::Id::filter> {
   // source user identity for now). Unlike mTLS, TLS connection does not require
   // a client certificate. Upon completion of the authentication, the callback
   // is invoked.
-  virtual void validateX509(
+  /* virtual void validateX509(
       const istio::authentication::v1alpha1::MutualTls& params,
-      const MethodDoneCallback& done_callback) const;
+      const MethodDoneCallback& done_callback) const; */
+
+  
+  virtual istio::authn::Payload* validateX509(
+      const istio::authentication::v1alpha1::MutualTls& params,
+      bool& success) const; 
+
+  /*
+  virtual std::shared_ptr<istio::authn::Payload> validateX509(
+      const istio::authentication::v1alpha1::MutualTls& params,
+      bool& success) const; */
 
   // Validates JWT given the jwt params. If JWT is validated, it will call
   // the callback function with the extracted attributes and claims (JwtPayload)
   // and status SUCCESS. Otherwise, calling callback with status FAILED.
-  virtual void validateJwt(const istio::authentication::v1alpha1::Jwt& params,
-                           const MethodDoneCallback& done_callback);
+  /*virtual void validateJwt(const istio::authentication::v1alpha1::Jwt& params,
+                           const MethodDoneCallback& done_callback); */
+
+
+  virtual istio::authn::Payload* validateJwt(
+      const istio::authentication::v1alpha1::Jwt& params,
+      bool& success);
+
+  /*
+  virtual std::shared_ptr<istio::authn::Payload> validateJwt(
+      const istio::authentication::v1alpha1::Jwt& params,
+      bool& success);  */
 
   // Mutable accessor to filter context.
   FilterContext* filter_context() { return &filter_context_; }
