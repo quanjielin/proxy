@@ -35,9 +35,12 @@ namespace AuthN {
 AuthenticationFilter::AuthenticationFilter(const FilterConfig& filter_config)
     : filter_config_(filter_config) {}
 
-AuthenticationFilter::~AuthenticationFilter() {}
+AuthenticationFilter::~AuthenticationFilter() {
+  std::cout<<"*******************quanjie AuthenticationFilter destructor \n";
+}
 
 void AuthenticationFilter::onDestroy() {
+  std::cout<<"*******************quanjie AuthenticationFilter onDestroy";
   ENVOY_LOG(debug, "Called AuthenticationFilter : {}", __func__);
 }
 
@@ -51,24 +54,30 @@ FilterHeadersStatus AuthenticationFilter::decodeHeaders(HeaderMap& headers,
 
   Payload payload;
 
-  if (!createPeerAuthenticator(filter_context_.get())->run(&payload)) {
+  std::cout << "********quanjie AuthenticationFilter policy {}\n" << filter_config_.policy().DebugString();
+
+  if (!filter_config_.policy().peer_is_optional() &&
+      !createPeerAuthenticator(filter_context_.get())->run(&payload)) {
     rejectRequest("Peer authentication failed.");
     return FilterHeadersStatus::StopIteration;
   }
 
-  bool success =
+  bool success = filter_config_.policy().origin_is_optional() ||
       createOriginAuthenticator(filter_context_.get())->run(&payload);
 
   // After Istio authn, the JWT headers consumed by Istio authn should be
   // removed.
   // TODO: remove internal headers used to pass data between filters
   // https://github.com/istio/istio/issues/4689
+  std::cout << "********quanjie origin success " << success << std::endl;
+
   for (auto const iter : filter_config_.jwt_output_payload_locations()) {
     filter_context_->headers()->remove(LowerCaseString(iter.second));
   }
 
   if (!success) {
     rejectRequest("Origin authentication failed.");
+    std::cout << "********quanjie origin authentication failed " << std::endl;
     return FilterHeadersStatus::StopIteration;
   }
 
@@ -82,6 +91,8 @@ FilterHeadersStatus AuthenticationFilter::decodeHeaders(HeaderMap& headers,
 }
 
 FilterDataStatus AuthenticationFilter::decodeData(Buffer::Instance&, bool) {
+  std::cout<<"*******************quanjie AuthenticationFilter decodeData";
+
   ENVOY_LOG(debug, "Called AuthenticationFilter : {}", __func__);
   ENVOY_LOG(debug,
             "Called AuthenticationFilter : {} FilterDataStatus::Continue;",
@@ -93,6 +104,8 @@ FilterDataStatus AuthenticationFilter::decodeData(Buffer::Instance&, bool) {
 }
 
 FilterTrailersStatus AuthenticationFilter::decodeTrailers(HeaderMap&) {
+  std::cout<<"*******************quanjie AuthenticationFilter decodeTrailers";
+
   ENVOY_LOG(debug, "Called AuthenticationFilter : {}", __func__);
   if (state_ == State::PROCESSING) {
     return FilterTrailersStatus::StopIteration;
@@ -102,11 +115,13 @@ FilterTrailersStatus AuthenticationFilter::decodeTrailers(HeaderMap&) {
 
 void AuthenticationFilter::setDecoderFilterCallbacks(
     StreamDecoderFilterCallbacks& callbacks) {
+  std::cout<<"*******************quanjie AuthenticationFilter setDecoderFilterCallbacks";
   ENVOY_LOG(debug, "Called AuthenticationFilter : {}", __func__);
   decoder_callbacks_ = &callbacks;
 }
 
 void AuthenticationFilter::rejectRequest(const std::string& message) {
+  std::cout<<"*******************quanjie AuthenticationFilter rejectRequest";
   if (state_ != State::PROCESSING) {
     ENVOY_LOG(error, "State {} is not PROCESSING.", state_);
     return;
