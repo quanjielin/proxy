@@ -103,5 +103,54 @@ void JwtVerificationFilter::setDecoderFilterCallbacks(
   decoder_callbacks_ = &callbacks;
 }
 
+void JwtVerificationFilter::log(const HeaderMap* request_headers,
+                 const HeaderMap* response_headers,
+                 const HeaderMap* response_trailers,
+                 const RequestInfo::RequestInfo&) {
+  ENVOY_LOG(debug,
+            "**************Called JwtVerificationFilter log::Filter : {}",
+            __func__);
+
+
+  ENVOY_LOG(debug,
+            "**************Called JwtVerificationFilter log::request_headers*************");
+  if (request_headers != nullptr) {
+    request_headers->iterate(
+        [](const HeaderEntry& header, void*) -> HeaderMap::Iterate {
+          ENVOY_LOG(debug,
+                    " '{}':'{}'",
+                    header.key().c_str(),
+                    header.value().c_str());
+          return HeaderMap::Iterate::Continue;
+        }, nullptr);
+  }
+
+  if (response_headers != nullptr) {
+    ENVOY_LOG(debug,
+              "**************Called JwtVerificationFilter log::response_headers*************");
+    response_headers->iterate(
+        [](const HeaderEntry& header, void*) -> HeaderMap::Iterate {
+          ENVOY_LOG(debug,
+                    " '{}':'{}'",
+                    header.key().c_str(),
+                    header.value().c_str());
+          return HeaderMap::Iterate::Continue;
+        }, nullptr);
+  }
+
+  if (response_trailers != nullptr) {
+    ENVOY_LOG(debug,
+              "**************Called JwtVerificationFilter log::response_trailers*************");
+    response_trailers->iterate(
+        [](const HeaderEntry& header, void*) -> HeaderMap::Iterate {
+          ENVOY_LOG(debug,
+                    " '{}':'{}'",
+                    header.key().c_str(),
+                    header.value().c_str());
+          return HeaderMap::Iterate::Continue;
+        }, nullptr);
+  }
+}
+
 }  // namespace Http
 }  // namespace Envoy

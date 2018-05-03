@@ -18,6 +18,7 @@
 #include "src/envoy/http/jwt_auth/jwt_authenticator.h"
 
 #include "common/common/logger.h"
+#include "envoy/access_log/access_log.h"
 #include "envoy/http/filter.h"
 
 namespace Envoy {
@@ -26,6 +27,7 @@ namespace Http {
 // The Envoy filter to process JWT auth.
 class JwtVerificationFilter : public StreamDecoderFilter,
                               public JwtAuth::JwtAuthenticator::Callbacks,
+                              public AccessLog::Instance,
                               public Logger::Loggable<Logger::Id::filter> {
  public:
   JwtVerificationFilter(Upstream::ClusterManager& cm,
@@ -41,6 +43,10 @@ class JwtVerificationFilter : public StreamDecoderFilter,
   FilterTrailersStatus decodeTrailers(HeaderMap&) override;
   void setDecoderFilterCallbacks(
       StreamDecoderFilterCallbacks& callbacks) override;
+
+  virtual void log(const HeaderMap* request_headers, const HeaderMap* response_headers,
+                   const HeaderMap* response_trailers,
+                   const RequestInfo::RequestInfo& request_info) override;
 
  private:
   // the function for JwtAuth::Authenticator::Callbacks interface.
