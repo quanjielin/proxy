@@ -58,9 +58,13 @@ class JwtVerificationFilterConfig : public NamedHttpFilterConfigFactory {
     Upstream::ClusterManager& cm = context.clusterManager();
     return [&cm, store_factory](
                Http::FilterChainFactoryCallbacks& callbacks) -> void {
+      std::shared_ptr<Envoy::Http::JwtVerificationFilter> instance = std::make_shared<Http::JwtVerificationFilter>(cm, store_factory->store());
+      callbacks.addStreamDecoderFilter(instance);
+      /*
       callbacks.addStreamDecoderFilter(
           std::make_shared<Http::JwtVerificationFilter>(
-              cm, store_factory->store()));
+              cm, store_factory->store())); */
+      callbacks.addAccessLogHandler(AccessLog::InstanceSharedPtr(instance));
     };
   }
 };

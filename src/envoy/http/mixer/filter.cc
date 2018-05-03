@@ -215,6 +215,34 @@ void Filter::log(const HeaderMap* request_headers,
                  const HeaderMap* response_trailers,
                  const RequestInfo::RequestInfo& request_info) {
   ENVOY_LOG(debug, "Called Mixer::Filter : {}", __func__);
+
+  ENVOY_LOG(debug,
+            "**************Called Mixer::Filter*************");
+
+  if (request_headers != nullptr) {
+    request_headers->iterate(
+        [](const HeaderEntry& header, void*) -> HeaderMap::Iterate {
+          ENVOY_LOG(debug,
+                    " '{}':'{}'",
+                    header.key().c_str(),
+                    header.value().c_str());
+          return HeaderMap::Iterate::Continue;
+        }, nullptr);
+  }
+
+  if (response_headers != nullptr) {
+    ENVOY_LOG(debug,
+              "**************Called Mixer::Filter::response_headers*************");
+    response_headers->iterate(
+        [](const HeaderEntry& header, void*) -> HeaderMap::Iterate {
+          ENVOY_LOG(debug,
+                    " '{}':'{}'",
+                    header.key().c_str(),
+                    header.value().c_str());
+          return HeaderMap::Iterate::Continue;
+        }, nullptr);
+  }
+
   if (!handler_) {
     if (request_headers == nullptr) {
       return;
