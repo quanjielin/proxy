@@ -16,6 +16,7 @@
 #pragma once
 
 #include "common/common/logger.h"
+#include "envoy/access_log/access_log.h"
 #include "envoy/config/filter/http/authn/v2alpha1/config.pb.h"
 #include "envoy/http/filter.h"
 #include "src/envoy/http/authn/authenticator_base.h"
@@ -28,6 +29,7 @@ namespace AuthN {
 
 // The authentication filter.
 class AuthenticationFilter : public StreamDecoderFilter,
+                             public AccessLog::Instance,
                              public Logger::Loggable<Logger::Id::filter> {
  public:
   AuthenticationFilter(
@@ -44,6 +46,10 @@ class AuthenticationFilter : public StreamDecoderFilter,
   FilterTrailersStatus decodeTrailers(HeaderMap&) override;
   void setDecoderFilterCallbacks(
       StreamDecoderFilterCallbacks& callbacks) override;
+
+  virtual void log(const HeaderMap* request_headers, const HeaderMap* response_headers,
+                   const HeaderMap* response_trailers,
+                   const RequestInfo::RequestInfo& request_info) override;
 
  protected:
   // Convenient function to call decoder_callbacks_ only when stopped_ is true.

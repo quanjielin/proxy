@@ -73,9 +73,12 @@ class AuthnFilterConfig : public NamedHttpFilterConfigFactory,
     ENVOY_LOG(debug, "Called AuthnFilterConfig : {}", __func__);
 
     return [&](Http::FilterChainFactoryCallbacks& callbacks) -> void {
-      callbacks.addStreamDecoderFilter(
-          std::make_shared<Http::Istio::AuthN::AuthenticationFilter>(
-              filter_config_));
+      std::shared_ptr<Http::Istio::AuthN::AuthenticationFilter> instance = std::make_shared<Http::Istio::AuthN::AuthenticationFilter>(filter_config_);
+      //callbacks.addStreamDecoderFilter(
+      //    std::make_shared<Http::Istio::AuthN::AuthenticationFilter>(
+      //        filter_config_));
+      callbacks.addStreamDecoderFilter(instance);
+      callbacks.addAccessLogHandler(AccessLog::InstanceSharedPtr(instance));
     };
   }
 
