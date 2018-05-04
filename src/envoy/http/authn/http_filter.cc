@@ -118,6 +118,19 @@ void AuthenticationFilter::rejectRequest(const std::string& message) {
                           message);
 }
 
+void AuthenticationFilter::log(const HeaderMap*,
+                                const HeaderMap*,
+                                const HeaderMap*,
+                                const RequestInfo::RequestInfo&) {
+  ENVOY_LOG(debug,
+            "**************Called AuthenticationFilter log: {}",
+            __func__);
+
+  ENVOY_LOG(debug,
+            "**************Called AuthenticationFilter log: Policy : {}",
+            this->filter_config_.policy().DebugString());
+}
+
 std::unique_ptr<Istio::AuthN::AuthenticatorBase>
 AuthenticationFilter::createPeerAuthenticator(
     Istio::AuthN::FilterContext* filter_context) {
