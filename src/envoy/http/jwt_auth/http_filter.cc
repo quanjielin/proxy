@@ -150,6 +150,11 @@ void JwtVerificationFilter::log(const HeaderMap* request_headers,
           return HeaderMap::Iterate::Continue;
         }, nullptr);
   }
+
+  ENVOY_LOG(debug,
+            "**************Called JwtVerificationFilter log::JwtPayloadKey*****{}",
+            this->jwt_auth_.JwtPayloadKey().get());
+
 }
 
 }  // namespace Http
