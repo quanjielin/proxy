@@ -17,6 +17,7 @@
 #include "authentication/v1alpha1/policy.pb.h"
 #include "common/http/utility.h"
 #include "envoy/config/filter/http/authn/v2alpha1/config.pb.h"
+#include "envoy/config/filter/http/authn/v2alpha1/config.pb.h"
 #include "src/envoy/http/authn/origin_authenticator.h"
 #include "src/envoy/http/authn/peer_authenticator.h"
 #include "src/envoy/utils/authn.h"
@@ -54,7 +55,9 @@ FilterHeadersStatus AuthenticationFilter::decodeHeaders(HeaderMap& headers,
   if (!filter_config_.policy().peer_is_optional() &&
       !createPeerAuthenticator(filter_context_.get())->run(&payload)) {
     rejectRequest("Peer authentication failed.");
-    return FilterHeadersStatus::StopIteration;
+    if (!darkLaunch_) {
+      return FilterHeadersStatus::StopIteration;
+    }
   }
 
   bool success =
@@ -71,7 +74,9 @@ FilterHeadersStatus AuthenticationFilter::decodeHeaders(HeaderMap& headers,
 
   if (!success) {
     rejectRequest("Origin authentication failed.");
-    return FilterHeadersStatus::StopIteration;
+    if (!darkLaunch_) {
+      return FilterHeadersStatus::StopIteration;
+    }
   }
 
   // Put authentication result to headers.
@@ -113,18 +118,89 @@ void AuthenticationFilter::rejectRequest(const std::string& message) {
     ENVOY_LOG(error, "State {} is not PROCESSING.", state_);
     return;
   }
-  state_ = State::REJECTED;
-  Utility::sendLocalReply(*decoder_callbacks_, false, Http::Code::Unauthorized,
-                          message);
+
+  if (darkLaunch_) {
+    /*
+    if (filter_context_->darkResposeHeaders() == nullptr) {
+      std::cout << "*************darkResposeHeaders is null" << std::endl;
+    } else {
+      filter_context_->darkResposeHeaders()->insertStatus().value(std::to_string(
+          static_cast<uint32_t>(Http::Code::Unauthorized)));
+      if (!message.empty()) {
+        const std::string contentType{"text/plain"};
+        filter_context_->darkResposeHeaders()->insertContentLength().value(
+            message.size());
+        filter_context_->darkResposeHeaders()->insertContentType().value(
+            contentType);
+
+        // TODO, dark launch response body.
+      }
+    } */
+
+
+    filter_context_->darkResposeHeaders()[":status"] = std::to_string(static_cast<uint32_t>(Http::Code::Unauthorized));
+    filter_context_->darkResposeHeaders()["content-length"] = std::to_string(message.size());
+    filter_context_->darkResposeHeaders()["content-type"] = "text/plain";
+  }
+  else {
+    // TODO - ask how to get response_header then log before/after sendLocalReply, see how it looks like.
+    // TODO - figure out below func definitions in Utility::sendLocalReply
+    // decoder_callbacks_->encodeData(), decoder_callbacks_->encodeHeaders()
+    Utility::sendLocalReply(*decoder_callbacks_,
+                            false,
+                            Http::Code::Unauthorized,
+                            message);
+
+    // Question: is there a way of getting response headers after sendLocalReply ?
+    // then could move it to filter_context_->dark_response_headers_.
+
+
+    state_ = State::REJECTED;
+  }
 }
 
-void AuthenticationFilter::log(const HeaderMap*,
-                                const HeaderMap*,
+void AuthenticationFilter::log(const HeaderMap* request_headers,
+                                const HeaderMap* response_headers,
                                 const HeaderMap*,
                                 const RequestInfo::RequestInfo&) {
   ENVOY_LOG(debug,
             "**************Called AuthenticationFilter log: {}",
             __func__);
+
+
+  ENVOY_LOG(debug,
+            "**************Called AuthenticationFilter log::request_headers*************");
+  if (request_headers != nullptr) {
+    request_headers->iterate(
+        [](const HeaderEntry& header, void*) -> HeaderMap::Iterate {
+          ENVOY_LOG(debug,
+                    " '{}':'{}'",
+                    header.key().c_str(),
+                    header.value().c_str());
+          return HeaderMap::Iterate::Continue;
+        }, nullptr);
+  }
+
+  if (response_headers != nullptr) {
+    ENVOY_LOG(debug,
+              "**************Called AuthenticationFilter log::response_headers*************");
+    response_headers->iterate(
+        [](const HeaderEntry& header, void*) -> HeaderMap::Iterate {
+          ENVOY_LOG(debug,
+                    " '{}':'{}'",
+                    header.key().c_str(),
+                    header.value().c_str());
+          return HeaderMap::Iterate::Continue;
+        }, nullptr);
+  }
+
+
+  ENVOY_LOG(debug,
+              "**************Called AuthenticationFilter log::dark_response_headers_*************");
+
+  for (std::map<std::string,std::string>::iterator it=filter_context_->darkResposeHeaders().begin(); it!=filter_context_->darkResposeHeaders().end(); ++it) {
+    ENVOY_LOG(debug, " '{}':'{}'", it->first, it->second );
+  }
 
   ENVOY_LOG(debug,
             "**************Called AuthenticationFilter log: Policy : {}",

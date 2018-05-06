@@ -56,6 +56,7 @@ class AuthenticationFilter : public StreamDecoderFilter,
   void continueDecoding();
 
   // Convenient function to reject request.
+  //void rejectRequest(const std::string& message);
   void rejectRequest(const std::string& message);
 
   // Creates peer authenticator. This is made virtual function for
@@ -83,6 +84,8 @@ class AuthenticationFilter : public StreamDecoderFilter,
   // Context for authentication process. Created in decodeHeader to start
   // authentication process.
   std::unique_ptr<Istio::AuthN::FilterContext> filter_context_;
+
+  bool darkLaunch_{true};
 };
 
 }  // namespace AuthN
