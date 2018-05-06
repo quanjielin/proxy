@@ -57,7 +57,13 @@ class FilterContext : public Logger::Loggable<Logger::Id::filter> {
   const istio::authn::Result& authenticationResult() { return result_; }
 
   // Accessor to headers.
+  // HeaderMap* headers() { return headers_; }
   HeaderMap* headers() { return headers_; }
+
+  // Accessor to dark_response_headers_.
+  // std::unique_ptr<HeaderMap> darkResposeHeaders() {return dark_response_headers_;}
+  std::map<std::string, std::string>& darkResposeHeaders() {return dark_response_headers_;}
+
   // Accessor to connection
   const Network::Connection* connection() { return connection_; }
   // Accessor to the filter config
@@ -69,6 +75,13 @@ class FilterContext : public Logger::Loggable<Logger::Id::filter> {
  private:
   // Pointer to the headers of the request.
   HeaderMap* headers_;
+
+  // TODO, need to export envoy.HeaderMapImpl to initialize HeaderMap here.
+  // (inprogress?) upstream current filters to envoy.
+  // HeaderMap* dark_response_headers_{};
+  std::map<std::string, std::string> dark_response_headers_;
+
+  // TODO - dark response body ? or just headers ?
 
   // Pointer to network connection of the request.
   const Network::Connection* connection_;
