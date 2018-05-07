@@ -66,13 +66,28 @@ void JwtVerificationFilter::onDone(const JwtAuth::Status& status) {
     return;
   }
   if (status != JwtAuth::Status::OK) {
-    state_ = Responded;
-    // verification failed
-    Code code = Code(401);  // Unauthorized
-    // return failure reason as message body
-    Utility::sendLocalReply(*decoder_callbacks_, false, code,
-                            JwtAuth::StatusToString(status));
-    return;
+    if (darkLaunch_) {
+      const Http::LowerCaseString darkLaunchStatus("dark_response_status");
+      const Http::LowerCaseString darkLaunchMessage("dark_response_message");
+
+      if (jwt_auth_.headers()->get(darkLaunchStatus) == nullptr) {
+        jwt_auth_.headers()->addCopy(darkLaunchStatus,
+                                     std::to_string(static_cast<uint32_t>(Http::Code::Unauthorized)));
+      }
+
+      if (jwt_auth_.headers()->get(darkLaunchMessage) == nullptr) {
+        jwt_auth_.headers()->addCopy(darkLaunchMessage,
+                                     JwtAuth::StatusToString(status));
+      }
+    } else {
+      state_ = Responded;
+      // verification failed
+      Code code = Code(401);  // Unauthorized
+      // return failure reason as message body
+      Utility::sendLocalReply(*decoder_callbacks_, false, code,
+                              JwtAuth::StatusToString(status));
+      return;
+    }
   }
 
   state_ = Complete;

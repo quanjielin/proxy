@@ -85,7 +85,7 @@ class AuthenticationFilter : public StreamDecoderFilter,
   // authentication process.
   std::unique_ptr<Istio::AuthN::FilterContext> filter_context_;
 
-  bool darkLaunch_{true};
+  bool darkLaunch_ = true;
 };
 
 }  // namespace AuthN

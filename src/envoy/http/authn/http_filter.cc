@@ -138,9 +138,21 @@ void AuthenticationFilter::rejectRequest(const std::string& message) {
     } */
 
 
-    filter_context_->darkResposeHeaders()[":status"] = std::to_string(static_cast<uint32_t>(Http::Code::Unauthorized));
-    filter_context_->darkResposeHeaders()["content-length"] = std::to_string(message.size());
-    filter_context_->darkResposeHeaders()["content-type"] = "text/plain";
+    //filter_context_->darkResposeHeaders()[":status"] = std::to_string(static_cast<uint32_t>(Http::Code::Unauthorized));
+    //filter_context_->darkResposeHeaders()["content-length"] = std::to_string(message.size());
+    //filter_context_->darkResposeHeaders()["content-type"] = "text/plain";
+
+    const Http::LowerCaseString darkLaunchStatus("dark_response_status");
+    const Http::LowerCaseString darkLaunchMessage("dark_response_message");
+
+    if (filter_context_->headers()->get(darkLaunchStatus) == nullptr) {
+      filter_context_->headers()->addCopy(darkLaunchStatus,
+                                          std::to_string(static_cast<uint32_t>(Http::Code::Unauthorized)));
+    }
+
+    if (filter_context_->headers()->get(darkLaunchMessage) == nullptr) {
+      filter_context_->headers()->addCopy(darkLaunchMessage, message);
+    }
   }
   else {
     // TODO - ask how to get response_header then log before/after sendLocalReply, see how it looks like.

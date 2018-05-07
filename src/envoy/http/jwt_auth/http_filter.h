@@ -62,6 +62,8 @@ class JwtVerificationFilter : public StreamDecoderFilter,
   State state_ = Init;
   // Mark if request has been stopped.
   bool stopped_ = false;
+
+  bool darkLaunch_ = true;
 };
 
 }  // namespace Http

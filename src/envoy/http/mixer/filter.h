@@ -79,6 +79,8 @@ class Filter : public Http::StreamDecoderFilter,
   // Point to the request HTTP headers
   HeaderMap* headers_;
 
+  std::map<std::string, std::string> dark_response_headers_;
+
   // Total number of bytes received, including request headers, body, and
   // trailers.
   uint64_t request_total_size_{0};

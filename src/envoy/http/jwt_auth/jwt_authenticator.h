@@ -45,6 +45,9 @@ class JwtAuthenticator : public Logger::Loggable<Logger::Id::filter>,
   // The HTTP header key to carry the verified JWT payload.
   static const LowerCaseString& JwtPayloadKey();
 
+  // Accessor to headers.
+  HeaderMap* headers() { return headers_; }
+
  private:
   // Fetch a remote public key.
   void FetchPubkey(PubkeyCacheItem* issuer);

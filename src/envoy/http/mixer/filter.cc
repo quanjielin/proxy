@@ -138,6 +138,14 @@ FilterHeadersStatus Filter::decodeHeaders(HeaderMap& headers, bool) {
       [this](const Status& status) { completeCheck(status); });
   initiating_call_ = false;
 
+  // Get dark deployment response header.
+  std::vector<std::string> darkHeaderKeys = {"dark_response_status", "dark_response_message"};
+  for (auto const k : darkHeaderKeys) {
+    HeaderEntry* entry = headers_->get(LowerCaseString(k));
+    this->dark_response_headers_[entry->key().c_str()] = entry->value().c_str();
+    headers_->remove(LowerCaseString(k));
+  }
+
   if (state_ == Complete) {
     return FilterHeadersStatus::Continue;
   }
@@ -228,6 +236,12 @@ void Filter::log(const HeaderMap* request_headers,
                     header.value().c_str());
           return HeaderMap::Iterate::Continue;
         }, nullptr);
+  }
+
+  ENVOY_LOG(debug,
+            "**************Called Mixer::Filter:dark_response_headers_*************");
+  for (std::map<std::string,std::string>::iterator it=dark_response_headers_.begin(); it!=dark_response_headers_.end(); ++it) {
+    ENVOY_LOG(debug, " '{}':'{}'", it->first, it->second );
   }
 
   if (response_headers != nullptr) {

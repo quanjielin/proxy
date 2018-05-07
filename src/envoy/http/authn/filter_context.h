@@ -57,7 +57,6 @@ class FilterContext : public Logger::Loggable<Logger::Id::filter> {
   const istio::authn::Result& authenticationResult() { return result_; }
 
   // Accessor to headers.
-  // HeaderMap* headers() { return headers_; }
   HeaderMap* headers() { return headers_; }
 
   // Accessor to dark_response_headers_.
