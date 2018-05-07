@@ -118,6 +118,7 @@ void Filter::ReadPerRouteConfig(
 
 FilterHeadersStatus Filter::decodeHeaders(HeaderMap& headers, bool) {
   ENVOY_LOG(debug, "Called Mixer::Filter : {}", __func__);
+
   request_total_size_ += headers.byteSize();
 
   ::istio::control::http::Controller::PerRouteConfig config;
@@ -132,19 +133,22 @@ FilterHeadersStatus Filter::decodeHeaders(HeaderMap& headers, bool) {
   CheckData check_data(headers, decoder_callbacks_->connection());
   HeaderUpdate header_update(&headers);
   headers_ = &headers;
-  cancel_check_ = handler_->Check(
-      &check_data, &header_update,
-      control_.GetCheckTransport(decoder_callbacks_->activeSpan()),
-      [this](const Status& status) { completeCheck(status); });
-  initiating_call_ = false;
 
-  // Get dark deployment response header.
+  // Remove dark deployment response header.
+  // [TODO] - if remove after check call below, check will extract all request headers(include dark headers)
+  // and put in Report attributes eventually.
   std::vector<std::string> darkHeaderKeys = {"dark_response_status", "dark_response_message"};
   for (auto const k : darkHeaderKeys) {
     HeaderEntry* entry = headers_->get(LowerCaseString(k));
     this->dark_response_headers_[entry->key().c_str()] = entry->value().c_str();
     headers_->remove(LowerCaseString(k));
   }
+
+  cancel_check_ = handler_->Check(
+      &check_data, &header_update,
+      control_.GetCheckTransport(decoder_callbacks_->activeSpan()),
+      [this](const Status& status) { completeCheck(status); });
+  initiating_call_ = false;
 
   if (state_ == Complete) {
     return FilterHeadersStatus::Continue;
@@ -268,12 +272,32 @@ void Filter::log(const HeaderMap* request_headers,
     handler_ = control_.controller()->CreateRequestHandler(config);
 
     CheckData check_data(*request_headers, nullptr);
+
+    ENVOY_LOG(debug,
+              "**************Called Mixer::before ExtractRequestAttributes*************");
+    if (request_headers != nullptr) {
+      request_headers->iterate(
+          [](const HeaderEntry& header, void*) -> HeaderMap::Iterate {
+            ENVOY_LOG(debug,
+                      " '{}':'{}'",
+                      header.key().c_str(),
+                      header.value().c_str());
+            return HeaderMap::Iterate::Continue;
+          }, nullptr);
+    }
+
     handler_->ExtractRequestAttributes(&check_data);
   }
   // response trailer header is not counted to response total size.
   ReportData report_data(response_headers, response_trailers, request_info,
                          request_total_size_);
+
+  ENVOY_LOG(debug,
+            "**************Called Mixer::Filter::before report*************");
   handler_->Report(&report_data);
+
+  ENVOY_LOG(debug,
+            "**************Called Mixer::Filter::after report*************");
 }
 
 }  // namespace Mixer

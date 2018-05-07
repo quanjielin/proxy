@@ -29,7 +29,10 @@ namespace http {
 void AttributesBuilder::ExtractRequestHeaderAttributes(CheckData *check_data) {
   utils::AttributesBuilder builder(&request_->attributes);
   std::map<std::string, std::string> headers = check_data->GetRequestHeaders();
+
+  GOOGLE_LOG(INFO) << "++++++++++++++++++++++++attributes_builder before ExtractRequestHeaderAttributes";
   builder.AddStringMap(AttributeName::kRequestHeaders, headers);
+  GOOGLE_LOG(INFO) << "++++++++++++++++++++++++attributes_builder after ExtractRequestHeaderAttributes";
 
   struct TopLevelAttr {
     CheckData::HeaderType header_type;
@@ -134,6 +137,8 @@ void AttributesBuilder::ExtractForwardedAttributes(CheckData *check_data) {
 
 void AttributesBuilder::ExtractCheckAttributes(CheckData *check_data) {
   ExtractRequestHeaderAttributes(check_data);
+
+  GOOGLE_LOG(INFO) << "***********************RequestHandlerImpl before ExtractAuthAttributes";
   ExtractAuthAttributes(check_data);
 
   utils::AttributesBuilder builder(&request_->attributes);
@@ -159,6 +164,7 @@ void AttributesBuilder::ForwardAttributes(const Attributes &forward_attributes,
 }
 
 void AttributesBuilder::ExtractReportAttributes(ReportData *report_data) {
+
   utils::AttributesBuilder builder(&request_->attributes);
 
   std::string dest_ip;

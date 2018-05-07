@@ -85,6 +85,7 @@ class AttributesBuilder {
                        ->mutable_entries();
     entries->clear();
     for (const auto& map_it : string_map) {
+      GOOGLE_LOG(INFO) << "***********************AddStringMap " << map_it.first;
       (*entries)[map_it.first] = map_it.second;
     }
   }

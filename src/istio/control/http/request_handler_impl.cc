@@ -36,7 +36,11 @@ void RequestHandlerImpl::ExtractRequestAttributes(CheckData* check_data) {
     service_context_->AddStaticAttributes(&request_context_);
 
     AttributesBuilder builder(&request_context_);
+
+    GOOGLE_LOG(INFO) << "***********************ExtractForwardedAttributes";
     builder.ExtractForwardedAttributes(check_data);
+
+    GOOGLE_LOG(INFO) << "***********************ExtractCheckAttributes";
     builder.ExtractCheckAttributes(check_data);
 
     service_context_->AddApiAttributes(check_data, &request_context_);
@@ -47,6 +51,7 @@ CancelFunc RequestHandlerImpl::Check(CheckData* check_data,
                                      HeaderUpdate* header_update,
                                      TransportCheckFunc transport,
                                      DoneFunc on_done) {
+  GOOGLE_LOG(INFO) << "***********************RequestHandlerImpl check";
   ExtractRequestAttributes(check_data);
 
   if (service_context_->client_context()->config().has_forward_attributes()) {
@@ -70,9 +75,14 @@ CancelFunc RequestHandlerImpl::Check(CheckData* check_data,
 
 // Make remote report call.
 void RequestHandlerImpl::Report(ReportData* report_data) {
+  GOOGLE_LOG(INFO) << "***********************RequestHandlerImpl report";
+
   if (!service_context_->enable_mixer_report()) {
+    GOOGLE_LOG(INFO) << "***********************RequestHandlerImpl mixer report not enabled";
     return;
   }
+
+  GOOGLE_LOG(INFO) << "***********************RequestHandlerImpl mixer report enabled";
   AttributesBuilder builder(&request_context_);
   builder.ExtractReportAttributes(report_data);
 

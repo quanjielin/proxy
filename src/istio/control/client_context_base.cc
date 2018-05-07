@@ -102,8 +102,7 @@ CancelFunc ClientContextBase::SendCheck(TransportCheckFunc transport,
 
 void ClientContextBase::SendReport(const RequestContext& request) {
   // TODO: add debug message
-  // GOOGLE_LOG(INFO) << "Report attributes: " <<
-  // request.attributes.DebugString();
+  GOOGLE_LOG(INFO) << "Report attributes: " << request.attributes.DebugString();
   mixer_client_->Report(request.attributes);
 }
 
