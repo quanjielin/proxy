@@ -28,6 +28,8 @@ namespace {
 // The autorization bearer prefix.
 const std::string kBearerPrefix = "Bearer ";
 
+const LowerCaseString kIAPHeaderKey("x-goog-iap-jwt-assertion");
+
 // The query parameter name to get JWT token.
 const std::string kParamAccessToken = "access_token";
 
@@ -65,6 +67,17 @@ void JwtTokenExtractor::Extract(
     const HeaderMap& headers,
     std::vector<std::unique_ptr<JwtTokenExtractor::Token>>* tokens) const {
   if (!authorization_issuers_.empty()) {
+
+    const HeaderEntry* iap = headers.get(kIAPHeaderKey);
+    if (iap) {
+      const std::string& value = std::string(iap->value().c_str(), iap->value().size());
+      ENVOY_LOG(debug, "JwtTokenExtractor got iap token: {}",
+                value);
+      tokens->emplace_back(new Token(value,
+                                     authorization_issuers_, true, nullptr));
+      return;
+    }
+
     const HeaderEntry* entry = headers.Authorization();
     if (entry) {
       // Extract token from header.
