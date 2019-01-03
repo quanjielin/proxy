@@ -28,7 +28,7 @@ namespace {
 // The autorization bearer prefix.
 const std::string kBearerPrefix = "Bearer ";
 
-const LowerCaseString kIAPHeaderKey("x-goog-iap-jwt-assertion");
+//const LowerCaseString kIAPHeaderKey("x-goog-iap-jwt-assertion");
 
 // The query parameter name to get JWT token.
 const std::string kParamAccessToken = "access_token";
@@ -67,7 +67,9 @@ void JwtTokenExtractor::Extract(
     const HeaderMap& headers,
     std::vector<std::unique_ptr<JwtTokenExtractor::Token>>* tokens) const {
   if (!authorization_issuers_.empty()) {
-
+    std::cout << "*****enter extract use Authorization";
+    ENVOY_LOG(debug, "++++enter extract use Authorization");
+    /*
     const HeaderEntry* iap = headers.get(kIAPHeaderKey);
     if (iap) {
       const std::string& value = std::string(iap->value().c_str(), iap->value().size());
@@ -76,7 +78,7 @@ void JwtTokenExtractor::Extract(
       tokens->emplace_back(new Token(value,
                                      authorization_issuers_, true, nullptr));
       return;
-    }
+    } */
 
     const HeaderEntry* entry = headers.Authorization();
     if (entry) {
@@ -95,9 +97,17 @@ void JwtTokenExtractor::Extract(
   for (const auto& header_it : header_maps_) {
     const HeaderEntry* entry = headers.get(header_it.first);
     if (entry) {
+      std::string token;
+      absl::string_view val = entry->value().getStringView();
+      if (val.find(" ") != absl::string_view::npos) {
+        absl::string_view prefix = val.substr(0, val.find(" "));
+        token = entry->value().c_str() + prefix.length() + 1;
+      } else {
+        token = std::string(entry->value().c_str(), entry->value().size());
+      }
+
       tokens->emplace_back(
-          new Token(std::string(entry->value().c_str(), entry->value().size()),
-                    header_it.second, false, &header_it.first));
+          new Token(token, header_it.second, false, &header_it.first));
       // Only take the first one.
       return;
     }
