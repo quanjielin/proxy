@@ -61,6 +61,20 @@ bool AuthenticatorBase::validateX509(const iaapi::MutualTls& mtls,
       Utils::GetPrincipal(connection, true,
                           payload->mutable_x509()->mutable_user());
 
+  if (mtls.mode() == iaapi::MutualTls::STRICT) {
+    if (!has_user) {
+      return false;
+    }
+
+    std::string source_user;
+    if (!Utils::GetPrincipal(connection, false, &source_user)) {
+      ENVOY_LOG(debug, "no source user found");
+      return false;
+    }
+
+    ENVOY_LOG(debug, "source user={}, destination user={}", source_user, payload->x509().user());
+  }
+
   ENVOY_LOG(debug, "validateX509 mode {}: ssl={}, has_user={}",
             iaapi::MutualTls::Mode_Name(mtls.mode()),
             connection->ssl() != nullptr, has_user);
